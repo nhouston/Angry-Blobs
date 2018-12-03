@@ -1,0 +1,1856 @@
+<html>
+
+<head>
+    <title>Angry Blobs - Assignment</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+
+    </style>
+    <link type="text/css" rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="info">Angry Blobs</div>
+    <div id="start" style="visibility: hidden;">Press W to begin</div>
+
+    <div id="howTo" style="visibility: hidden;"> How to play - </div>
+    <div id="firing" style="visibility: hidden;"> Adjust angle of ball by using up and down arrows </div>
+    <div id="speedControls" style="visibility: hidden;"> A = Lower Speed D = Higher Speed </div>
+    <div id="spacebarFire" style="visibility: hidden;"> Use the space bar to fire!</div>
+
+    <div id="speed" style="visibility: hidden;"> Ball Speed: </div>
+    <div id="angle" style="visibility: hidden;"> Ball Angle: </div>
+
+    <div id="speedInfo" style="visibility: hidden;"></div>
+    <div id="angleInfo" style="visibility: hidden;"></div>
+
+    <div id="userScore" style="visibility: hidden;"> Your Score: </div>
+    <div id="AIScore" style="visibility: hidden;"> AI Score: </div>
+
+    <div id="userScoreInfo" style="visibility: hidden;"></div>
+    <div id="AIScoreInfo" style="visibility: hidden;"></div>
+
+    <div id="nextLevel" style="visibility: hidden;">Want the next level?? Press the Right Arrow!</div>
+
+    <div id="winner" style="visibility: hidden;">Winner: </div>
+    <div id="winnerIs" style="visibility: hidden;"></div>
+
+    <script src="js/three.min.js"></script>
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/physi.js"></script>
+    <script>
+        Physijs.scripts.worker = 'js/physijs_worker.js';
+        Physijs.scripts.ammo = 'ammo.js';
+
+        //Global game variables
+        var userScore = 0;
+        var AIScore = 0;
+        var state = 0;
+        var switchState = 0;
+
+        //firingball variables for setLinearVelocity
+        var speedOfBall = 50;
+        var projectoryHeight = 5;
+
+        function projectoryUpdateUP() {
+            return projectoryHeight = projectoryHeight + 5;
+        }
+
+        function projectoryUpdateDown() {
+            return projectoryHeight = projectoryHeight - 5;
+        }
+
+
+        //window resizing
+        function onWindowResize() {
+            windowHalfX = window.innerWidth / 2;
+            windowHalfY = window.innerHeight / 2;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', onWindowResize, false);
+
+
+        //background fog clear
+        var color = 0x000000;
+
+        // Create your main scene
+        var scene = new Physijs.Scene();
+
+        //set the value of gravity
+        scene.setGravity(new THREE.Vector3(0, -10, 0));
+
+        // Create main camera
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        // Create lights
+        var light = new THREE.PointLight(0xEEEEEE);
+        light.position.set(20, 0, 20);
+        scene.add(light);
+
+        var lightAmb = new THREE.AmbientLight(0x777777);
+        scene.add(lightAmb);
+
+        // Create start screen renderer
+        var renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        //gamefloor
+        var cube = new Physijs.BoxMesh(
+            new THREE.BoxGeometry(100, 0.25, 10), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                color: 0xf0ffff
+            })), 0, 1
+
+        );
+
+        //ball to fire
+        var firingBall = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+        //ball to fire AI
+        var firingBallAI = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+        //level2ball
+
+        //ball to fire
+        var firingBall2 = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+        //ball to fire AI
+        var firingBallAI2 = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+        //level 3 ball
+        //ball to fire
+        var firingBall3 = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+        //ball to fire AI
+        var firingBallAI3 = new Physijs.SphereMesh(
+            new THREE.SphereGeometry(1, 32, 32),
+            new Physijs.createMaterial(new THREE.MeshNormalMaterial(), 0, 3)
+        );
+
+
+        /* Shape texture for ALL block structures
+         * Used from website: https://mediamilitia.com/wallpaper-textures-27-free-images/
+         */
+
+
+        //game structure components - level 1 - user
+
+        function structureLevel1() {
+            var struct1 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct2 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct3 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(25, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct4 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct5 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct6 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(25, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                struct1,
+                struct2,
+                struct3,
+                struct4,
+                struct5,
+                struct6
+            };
+        }
+        /*Defining the positions for level 1 for the user*/
+        function level1SturcturePositions() {
+            var ret = structureLevel1();
+            var struct1 = ret.struct1;
+            var struct2 = ret.struct2;
+            var struct3 = ret.struct3;
+            var struct4 = ret.struct4;
+            var struct5 = ret.struct5;
+            var struct6 = ret.struct6;
+
+            //move to position
+            //1
+            struct1.position.x += 40;
+            struct1.position.y += -17;
+            struct1.rotation.z = Math.PI / 2;
+
+            //2
+            struct2.position.x += 25;
+            struct2.position.y += -17;
+            struct2.rotation.z = Math.PI / 2;
+            //3
+            struct3.position.x += 32.5;
+            struct3.position.y += -8;
+            struct3.rotation.x = Math.PI / 2;
+            //4
+            struct4.position.x += 25;
+            struct4.position.y += 1.5;
+            struct4.rotation.z = Math.PI / 2;
+            //5
+            struct5.position.x += 40;
+            struct5.position.y += 1.5;
+            struct5.rotation.z = Math.PI / 2;
+            //6
+            struct6.position.x += 32.5;
+            struct6.position.y += 11;
+            struct6.rotation.x = Math.PI / 2;
+            return {
+                struct1,
+                struct2,
+                struct3,
+                struct4,
+                struct5,
+                struct6
+            };
+        }
+
+        var ret = level1SturcturePositions();
+        var struct1 = ret.struct1;
+        var struct2 = ret.struct2;
+        var struct3 = ret.struct3;
+        var struct4 = ret.struct4;
+        var struct5 = ret.struct5;
+        var struct6 = ret.struct6;
+
+        //level1 AI
+
+        function structureLevel1AI() {
+            var struct1AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct2AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct3AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(25, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct4AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct5AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var struct6AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(25, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                struct1AI,
+                struct2AI,
+                struct3AI,
+                struct4AI,
+                struct5AI,
+                struct6AI
+            };
+        }
+        /*Defining the positions for level 1 for the AI*/
+        function level1SturcturePositionsAI() {
+            var ret = structureLevel1AI();
+            var struct1AI = ret.struct1AI;
+            var struct2AI = ret.struct2AI;
+            var struct3AI = ret.struct3AI;
+            var struct4AI = ret.struct4AI;
+            var struct5AI = ret.struct5AI;
+            var struct6AI = ret.struct6AI;
+
+            //move to position
+            //1
+            struct1AI.position.x += 40;
+            struct1AI.position.y += -17;
+            struct1AI.rotation.z = Math.PI / 2;
+
+            //2
+            struct2AI.position.x += 25;
+            struct2AI.position.y += -17;
+            struct2AI.rotation.z = Math.PI / 2;
+            //3
+            struct3AI.position.x += 32.5;
+            struct3AI.position.y += -8;
+            struct3AI.rotation.x = Math.PI / 2;
+            //4
+            struct4AI.position.x += 25;
+            struct4AI.position.y += 1.5;
+            struct4AI.rotation.z = Math.PI / 2;
+            //5
+            struct5AI.position.x += 40;
+            struct5AI.position.y += 1.5;
+            struct5AI.rotation.z = Math.PI / 2;
+            //6
+            struct6AI.position.x += 32.5;
+            struct6AI.position.y += 11;
+            struct6AI.rotation.x = Math.PI / 2;
+            return {
+                struct1AI,
+                struct2AI,
+                struct3AI,
+                struct4AI,
+                struct5AI,
+                struct6AI
+            };
+        }
+
+        var ret = level1SturcturePositionsAI();
+        var struct1AI = ret.struct1AI;
+        var struct2AI = ret.struct2AI;
+        var struct3AI = ret.struct3AI;
+        var struct4AI = ret.struct4AI;
+        var struct5AI = ret.struct5AI;
+        var struct6AI = ret.struct6AI;
+
+
+
+
+
+        //level 2 components - user
+
+        function level2Structes() {
+            var structLevel2 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 10, 5), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num1 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(20, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num2 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 20, 5), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num3 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num4 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num5 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(20, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num6 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(13, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num7 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num8 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                structLevel2,
+                structLevel2num1,
+                structLevel2num2,
+                structLevel2num3,
+                structLevel2num4,
+                structLevel2num5,
+                structLevel2num6,
+                structLevel2num7,
+                structLevel2num8
+            };
+        }
+        /*Defining the positions for level 2 for the user*/
+        function level2StructurePositions() {
+            var ret = level2Structes();
+            var structLevel2 = ret.structLevel2;
+            var structLevel2num1 = ret.structLevel2num1;
+            var structLevel2num2 = ret.structLevel2num2;
+            var structLevel2num3 = ret.structLevel2num3;
+            var structLevel2num4 = ret.structLevel2num4;
+            var structLevel2num5 = ret.structLevel2num5;
+            var structLevel2num6 = ret.structLevel2num6;
+            var structLevel2num7 = ret.structLevel2num7;
+            var structLevel2num8 = ret.structLevel2num8;
+            //1
+            structLevel2.position.x += 10;
+            structLevel2.position.y += 0;
+            //2
+            structLevel2num1.position.y += 10;
+            structLevel2num1.position.x += -5;
+            //3
+            structLevel2num2.position.x += 25;
+            //3
+            structLevel2num3.position.x += 20;
+            structLevel2num3.position.y += 20;
+            structLevel2num3.rotation.z += Math.PI / 2;
+            //4
+            structLevel2num4.position.x += 30;
+            structLevel2num4.position.y += 20;
+            structLevel2num4.rotation.z += Math.PI / 2;
+            //5
+            structLevel2num5.position.x += 25;
+            structLevel2num5.position.y += 30;
+            structLevel2num5.rotation.x += Math.PI / 2;
+            //6
+            structLevel2num6.position.x += 8;
+            structLevel2num6.position.y += 30;
+            structLevel2num6.rotation.x += Math.PI / 2;
+            //7
+            structLevel2num7.position.x += 5;
+            structLevel2num7.position.y += 20;
+            structLevel2num7.rotation.z += Math.PI / 2;
+            //8
+            structLevel2num8.position.x += 10;
+            structLevel2num8.position.y += 20;
+            structLevel2num8.rotation.z += Math.PI / 2;
+            return {
+                structLevel2,
+                structLevel2num1,
+                structLevel2num2,
+                structLevel2num3,
+                structLevel2num4,
+                structLevel2num5,
+                structLevel2num6,
+                structLevel2num7,
+                structLevel2num8
+            };
+        }
+
+        var ret = level2StructurePositions();
+        var structLevel2 = ret.structLevel2;
+        var structLevel2num1 = ret.structLevel2num1;
+        var structLevel2num2 = ret.structLevel2num2;
+        var structLevel2num3 = ret.structLevel2num3;
+        var structLevel2num4 = ret.structLevel2num4;
+        var structLevel2num5 = ret.structLevel2num5;
+        var structLevel2num6 = ret.structLevel2num6;
+        var structLevel2num7 = ret.structLevel2num7;
+        var structLevel2num8 = ret.structLevel2num8;
+
+
+
+        //level 2 ai components
+        //level 2 components
+
+        function level2StructesAI() {
+            var structLevel2AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 10, 5), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num1AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(20, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num2AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(15, 20, 5), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num3AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num4AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num5AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(20, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num6AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(13, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num7AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel2num8AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 1.2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                structLevel2AI,
+                structLevel2num1AI,
+                structLevel2num2AI,
+                structLevel2num3AI,
+                structLevel2num4AI,
+                structLevel2num5AI,
+                structLevel2num6AI,
+                structLevel2num7AI,
+                structLevel2num8AI
+            };
+        }
+        /*Defining the positions for level 2 for the AI*/
+        function level2StructurePositionsAI() {
+            var ret = level2StructesAI();
+            var structLevel2AI = ret.structLevel2AI;
+            var structLevel2num1AI = ret.structLevel2num1AI;
+            var structLevel2num2AI = ret.structLevel2num2AI;
+            var structLevel2num3AI = ret.structLevel2num3AI;
+            var structLevel2num4AI = ret.structLevel2num4AI;
+            var structLevel2num5AI = ret.structLevel2num5AI;
+            var structLevel2num6AI = ret.structLevel2num6AI;
+            var structLevel2num7AI = ret.structLevel2num7AI;
+            var structLevel2num8AI = ret.structLevel2num8AI;
+            //1
+            structLevel2AI.position.x += 10;
+            structLevel2AI.position.y += 0;
+            //2
+            structLevel2num1AI.position.y += 10;
+            structLevel2num1AI.position.x += -5;
+            //3
+            structLevel2num2AI.position.x += 25;
+            //3
+            structLevel2num3AI.position.x += 20;
+            structLevel2num3AI.position.y += 20;
+            structLevel2num3AI.rotation.z += Math.PI / 2;
+            //4
+            structLevel2num4AI.position.x += 30;
+            structLevel2num4AI.position.y += 20;
+            structLevel2num4AI.rotation.z += Math.PI / 2;
+            //5
+            structLevel2num5AI.position.x += 25;
+            structLevel2num5AI.position.y += 30;
+            structLevel2num5AI.rotation.x += Math.PI / 2;
+            //6
+            structLevel2num6AI.position.x += 8;
+            structLevel2num6AI.position.y += 30;
+            structLevel2num6AI.rotation.x += Math.PI / 2;
+            //7
+            structLevel2num7AI.position.x += 5;
+            structLevel2num7AI.position.y += 20;
+            structLevel2num7AI.rotation.z += Math.PI / 2;
+            //8
+            structLevel2num8AI.position.x += 10;
+            structLevel2num8AI.position.y += 20;
+            structLevel2num8AI.rotation.z += Math.PI / 2;
+            return {
+                structLevel2AI,
+                structLevel2num1AI,
+                structLevel2num2AI,
+                structLevel2num3AI,
+                structLevel2num4AI,
+                structLevel2num5AI,
+                structLevel2num6AI,
+                structLevel2num7AI,
+                structLevel2num8AI
+            };
+        }
+
+        var ret = level2StructurePositionsAI();
+        var structLevel2AI = ret.structLevel2AI;
+        var structLevel2num1AI = ret.structLevel2num1AI;
+        var structLevel2num2AI = ret.structLevel2num2AI;
+        var structLevel2num3AI = ret.structLevel2num3AI;
+        var structLevel2num4AI = ret.structLevel2num4AI;
+        var structLevel2num5AI = ret.structLevel2num5AI;
+        var structLevel2num6AI = ret.structLevel2num6AI;
+        var structLevel2num7AI = ret.structLevel2num7AI;
+        var structLevel2num8AI = ret.structLevel2num8AI;
+
+
+        //LEVEL 3 - user
+
+        function level3() {
+            var structLevel3 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+
+            var structLevel3num1 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num2 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num3 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num4 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num5 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num6 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num7 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num8 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num9 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num10 = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                structLevel3,
+                structLevel3num1,
+                structLevel3num2,
+                structLevel3num3,
+                structLevel3num4,
+                structLevel3num5,
+                structLevel3num6,
+                structLevel3num7,
+                structLevel3num8,
+                structLevel3num9,
+                structLevel3num10
+            };
+        }
+        /*Defining the positions for level 3 for the user*/
+        function level3Positions() {
+            var ret = level3();
+            var structLevel3 = ret.structLevel3;
+            var structLevel3num1 = ret.structLevel3num1;
+            var structLevel3num2 = ret.structLevel3num2;
+            var structLevel3num3 = ret.structLevel3num3;
+            var structLevel3num4 = ret.structLevel3num4;
+            var structLevel3num5 = ret.structLevel3num5;
+            var structLevel3num6 = ret.structLevel3num6;
+            var structLevel3num7 = ret.structLevel3num7;
+            var structLevel3num8 = ret.structLevel3num8;
+            var structLevel3num9 = ret.structLevel3num9;
+            var structLevel3num10 = ret.structLevel3num10;
+
+
+
+            structLevel3.position.x += 15;
+            structLevel3.position.y -= 23;
+
+
+            structLevel3num1.position.x += 10;
+            structLevel3num1.position.y -= 15;
+            structLevel3num1.rotation.z += Math.PI / 2;
+
+            structLevel3num2.position.x += 0;
+            structLevel3num2.position.y -= 15;
+            structLevel3num2.rotation.z += Math.PI / 2;
+
+            structLevel3num3.position.x += 20;
+            structLevel3num3.position.y -= 15;
+            structLevel3num3.rotation.z += Math.PI / 2;
+
+            structLevel3num4.position.x += 30;
+            structLevel3num4.position.y -= 15;
+            structLevel3num4.rotation.z += Math.PI / 2;
+
+            structLevel3num5.position.x += 15;
+            structLevel3num5.position.y -= 5;
+
+
+            structLevel3num6.position.x += 10;
+            structLevel3num6.position.y += 2;
+            structLevel3num6.rotation.z += Math.PI / 2;
+
+            structLevel3num7.position.x += 0;
+            structLevel3num7.position.y += 2;
+            structLevel3num7.rotation.z += Math.PI / 2;
+
+            structLevel3num8.position.x += 20;
+            structLevel3num8.position.y += 2;
+            structLevel3num8.rotation.z += Math.PI / 2;
+
+            structLevel3num9.position.x += 30;
+            structLevel3num9.position.y += 2;
+            structLevel3num9.rotation.z += Math.PI / 2;
+
+            structLevel3num10.position.x += 15;
+            structLevel3num10.position.y += 10;
+            return {
+                structLevel3,
+                structLevel3num1,
+                structLevel3num2,
+                structLevel3num3,
+                structLevel3num4,
+                structLevel3num5,
+                structLevel3num6,
+                structLevel3num7,
+                structLevel3num8,
+                structLevel3num9,
+                structLevel3num10,
+            };
+        }
+
+        var ret = level3Positions();
+        var structLevel3 = ret.structLevel3;
+        var structLevel3num1 = ret.structLevel3num1;
+        var structLevel3num2 = ret.structLevel3num2;
+        var structLevel3num3 = ret.structLevel3num3;
+        var structLevel3num4 = ret.structLevel3num4;
+        var structLevel3num5 = ret.structLevel3num5;
+        var structLevel3num6 = ret.structLevel3num6;
+        var structLevel3num7 = ret.structLevel3num7;
+        var structLevel3num8 = ret.structLevel3num8;
+        var structLevel3num9 = ret.structLevel3num9;
+        var structLevel3num10 = ret.structLevel3num10;
+
+
+        //LEVEL 3 AI Structures
+
+        function level3AI() {
+            var structLevel3AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+
+            var structLevel3num1AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num2AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num3AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num4AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num5AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num6AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num7AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num8AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            var structLevel3num9AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(10, 2, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+
+            var structLevel3num10AI = new Physijs.BoxMesh(
+                new THREE.BoxGeometry(35, 1, 2), new Physijs.createMaterial(new THREE.MeshBasicMaterial({
+                    map: new THREE.TextureLoader().load('img/blocks.jpg'),
+                    side: THREE.DoubleSide
+                }))
+            );
+            return {
+                structLevel3AI,
+                structLevel3num1AI,
+                structLevel3num2AI,
+                structLevel3num3AI,
+                structLevel3num4AI,
+                structLevel3num5AI,
+                structLevel3num6AI,
+                structLevel3num7AI,
+                structLevel3num8AI,
+                structLevel3num9AI,
+                structLevel3num10AI
+            };
+        }
+        /*Defining the positions for level 3 for the AI*/
+        function level3PositionsAI() {
+            var ret = level3AI();
+            var structLevel3AI = ret.structLevel3AI;
+            var structLevel3num1AI = ret.structLevel3num1AI;
+            var structLevel3num2AI = ret.structLevel3num2AI;
+            var structLevel3num3AI = ret.structLevel3num3AI;
+            var structLevel3num4AI = ret.structLevel3num4AI;
+            var structLevel3num5AI = ret.structLevel3num5AI;
+            var structLevel3num6AI = ret.structLevel3num6AI;
+            var structLevel3num7AI = ret.structLevel3num7AI;
+            var structLevel3num8AI = ret.structLevel3num8AI;
+            var structLevel3num9AI = ret.structLevel3num9AI;
+            var structLevel3num10AI = ret.structLevel3num10AI;
+
+
+            structLevel3AI.position.x += 15;
+            structLevel3AI.position.y -= 23;
+
+            structLevel3num1AI.position.x += 10;
+            structLevel3num1AI.position.y -= 15;
+            structLevel3num1AI.rotation.z += Math.PI / 2;
+
+            structLevel3num2AI.position.x += 0;
+            structLevel3num2AI.position.y -= 15;
+            structLevel3num2AI.rotation.z += Math.PI / 2;
+
+            structLevel3num3AI.position.x += 20;
+            structLevel3num3AI.position.y -= 15;
+            structLevel3num3AI.rotation.z += Math.PI / 2;
+
+            structLevel3num4AI.position.x += 30;
+            structLevel3num4AI.position.y -= 15;
+            structLevel3num4AI.rotation.z += Math.PI / 2;
+
+            structLevel3num5AI.position.x += 15;
+            structLevel3num5AI.position.y -= 5;
+
+
+            structLevel3num6AI.position.x += 10;
+            structLevel3num6AI.position.y += 2;
+            structLevel3num6AI.rotation.z += Math.PI / 2;
+
+            structLevel3num7AI.position.x += 0;
+            structLevel3num7AI.position.y += 2;
+            structLevel3num7AI.rotation.z += Math.PI / 2;
+
+            structLevel3num8AI.position.x += 20;
+            structLevel3num8AI.position.y += 2;
+            structLevel3num8AI.rotation.z += Math.PI / 2;
+
+            structLevel3num9AI.position.x += 30;
+            structLevel3num9AI.position.y += 2;
+            structLevel3num9AI.rotation.z += Math.PI / 2;
+
+            structLevel3num10AI.position.x += 15;
+            structLevel3num10AI.position.y += 10;
+            return {
+                structLevel3AI,
+                structLevel3num1AI,
+                structLevel3num2AI,
+                structLevel3num3AI,
+                structLevel3num4AI,
+                structLevel3num5AI,
+                structLevel3num6AI,
+                structLevel3num7AI,
+                structLevel3num8AI,
+                structLevel3num9AI,
+                structLevel3num10AI,
+            };
+        }
+        var ret = level3PositionsAI();
+        var structLevel3AI = ret.structLevel3AI;
+        var structLevel3num1AI = ret.structLevel3num1AI;
+        var structLevel3num2AI = ret.structLevel3num2AI;
+        var structLevel3num3AI = ret.structLevel3num3AI;
+        var structLevel3num4AI = ret.structLevel3num4AI;
+        var structLevel3num5AI = ret.structLevel3num5AI;
+        var structLevel3num6AI = ret.structLevel3num6AI;
+        var structLevel3num7AI = ret.structLevel3num7AI;
+        var structLevel3num8AI = ret.structLevel3num8AI;
+        var structLevel3num9AI = ret.structLevel3num9AI;
+        var structLevel3num10AI = ret.structLevel3num10AI;
+
+        /*Adds level 1 for the user*/
+        function addLevel1() {
+            scene.add(struct1);
+            scene.add(struct2);
+            scene.add(struct3);
+            scene.add(struct4);
+            scene.add(struct5);
+            scene.add(struct6);
+        }
+        /*Adds level 1 for the AI*/
+        function addLevel1Game() {
+            scene.add(struct1AI);
+            scene.add(struct2AI);
+            scene.add(struct3AI);
+            scene.add(struct4AI);
+            scene.add(struct5AI);
+            scene.add(struct6AI);
+        }
+        /*Adds level 2 for the user*/
+        function addLevel2() {
+            scene.add(structLevel2);
+            scene.add(structLevel2num1);
+            scene.add(structLevel2num2);
+            scene.add(structLevel2num3);
+            scene.add(structLevel2num4);
+            scene.add(structLevel2num5);
+            scene.add(structLevel2num6);
+            scene.add(structLevel2num7);
+            scene.add(structLevel2num8);
+        }
+        /*Adds level 2 for the AI*/
+        function addLevel2Game() {
+            scene.add(structLevel2AI);
+            scene.add(structLevel2num1AI);
+            scene.add(structLevel2num2AI);
+            scene.add(structLevel2num3AI);
+            scene.add(structLevel2num4AI);
+            scene.add(structLevel2num5AI);
+            scene.add(structLevel2num6AI);
+            scene.add(structLevel2num7AI);
+            scene.add(structLevel2num8AI);
+        }
+        /*Adds level 3 for the user*/
+        function addLevel3() {
+            scene.add(structLevel3);
+            scene.add(structLevel3num1);
+            scene.add(structLevel3num2);
+            scene.add(structLevel3num3);
+            scene.add(structLevel3num4);
+            scene.add(structLevel3num5);
+            scene.add(structLevel3num6);
+            scene.add(structLevel3num7);
+            scene.add(structLevel3num8);
+            scene.add(structLevel3num9);
+            scene.add(structLevel3num10);
+        }
+        /*Adds level 3 for the AI*/
+        function addLevel3Game() {
+            scene.add(structLevel3AI);
+            scene.add(structLevel3num1AI);
+            scene.add(structLevel3num2AI);
+            scene.add(structLevel3num3AI);
+            scene.add(structLevel3num4AI);
+            scene.add(structLevel3num5AI);
+            scene.add(structLevel3num6AI);
+            scene.add(structLevel3num7AI);
+            scene.add(structLevel3num8AI);
+            scene.add(structLevel3num9AI);
+            scene.add(structLevel3num10AI);
+        }
+
+
+        /*Function that defines the Game AI
+         * Uses random functions which are fed into the setLinearVelocity method
+         * Not intelligent but does the job
+         */
+        function gameAI() {
+            var min = 1;
+            var maxSpeed = 200;
+            var minSpeed = 1;
+            var maxHeight = 80;
+            var minHeight = 1;
+            //random functions
+            var ranNumSpeed = Math.floor(Math.random() * (minSpeed + maxSpeed + 1)) + minSpeed;
+            var ranNumHeight = Math.floor(Math.random() * (minHeight + maxHeight + 1)) + minHeight;
+
+            switch (min) {
+                case 1:
+                    if (switchState == 3) {
+                        firingBallAI.setLinearVelocity(new THREE.Vector3(ranNumSpeed, ranNumHeight, 0));
+                        AILevel1Scoring();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+
+                    }
+                    if (switchState == 5) {
+                        firingBallAI2.setLinearVelocity(new THREE.Vector3(ranNumSpeed, ranNumHeight, 0));
+                        Level2ScoringAI();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+                    }
+                    if (switchState == 7) {
+                        firingBallAI3.setLinearVelocity(new THREE.Vector3(ranNumSpeed, ranNumHeight, 0));
+                        level3ScoringAI();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+                    }
+
+                    break;
+                case 2:
+                    firingBallAI.setLinearVelocity(new THREE.Vector3(0, 0, 0));
+                    break;
+            }
+        }
+
+
+        /*Function for the scoring of level 1 for the user*/
+        function userLevel1Scoring() {
+
+            //game collision detection - scoring system 
+
+            //firing ball hit detection
+            firingBall.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 1;
+
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            //structure hit detection 
+            //level 1
+            struct1.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 5;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            struct1.addEventListener('collision',
+                function(cube) {
+                    userScore %= 25;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            struct3.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 15;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            struct5.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 25;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+        }
+
+        /*Function for the scoring of level 1 for the AI*/
+        function AILevel1Scoring() {
+
+            //game collision detection - scoring system 
+            //firing ball hit detection
+            firingBallAI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 1;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+
+            //structure hit detection 
+            //level 1
+            struct1AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 5;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            struct1AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore %= 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            struct3AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 15;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            struct5AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+        }
+
+        /*Function for the scoring of level 2 for the user*/
+        function userLevel2Scoring() {
+            //level2 
+            structLevel2num1.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 5;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel2num1.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore %= 25;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel2num3.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 15;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel2num5.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 25;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            structLevel2num7.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 10;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+        }
+
+        /*Function for the scoring of level 2 for the AI*/
+        function Level2ScoringAI() {
+            //level2 
+            structLevel2num1AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 5;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel2num1AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore %= 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel2num3AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 15;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel2num5AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+
+            structLevel2num7AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 10;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+
+        }
+
+        /*Function for the scoring of level 3 for the user*/
+        
+        function level3Scoring() {
+            structLevel3.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 5;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel3num2.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 15;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            structLevel3num3.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 15;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel3num5.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 25;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+
+            structLevel3num7.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 10;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel3num8.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 10;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+            structLevel3num10.addEventListener('collision',
+                function(structureLevel1) {
+                    userScore += 10;
+                    document.getElementById('userScoreInfo').innerHTML = userScore.toString();
+                }
+            );
+        }
+
+        /*Function for the scoring of level 3 for the AI*/
+        
+        function level3ScoringAI() {
+            structLevel3AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 5;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel3num10AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 15;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel3num5AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel3num8AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 25;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+
+            structLevel3num7AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 10;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+            structLevel3num3AI.addEventListener('collision',
+                function(structureLevel1) {
+                    AIScore += 10;
+                    document.getElementById('AIScoreInfo').innerHTML = AIScore.toString();
+                }
+            );
+        }
+
+        /*spinning shape on loading screen*/
+        var sphere = new Physijs.Mesh(
+            new THREE.SphereGeometry(8, 32, 6, 3, 6.3, 1, 6.3), new THREE.MeshNormalMaterial()
+        );
+        scene.add(sphere);
+
+        /*ball and floor positons*/
+
+        //balls
+        firingBall.position.x += -45;
+        firingBall.position.y -= 24;
+
+        firingBallAI.position.x += -45;
+        firingBallAI.position.y -= 24;
+
+        firingBall2.position.x += -45;
+        firingBall2.position.y -= 24;
+
+        firingBallAI2.position.x += -45;
+        firingBallAI2.position.y -= 24;
+
+        firingBall3.position.x += -45;
+        firingBall3.position.y -= 24;
+
+        firingBallAI3.position.x += -45;
+        firingBallAI3.position.y -= 24;
+        //floor 
+        cube.position.y += -25;
+
+        // Set up the main camera
+        camera.position.z = 40;
+
+        /* Load the background texture- home
+         * Background texture used from site : https://pngtree.com/freebackground/green-mountain-background_257374.html
+         */
+        var texture = THREE.ImageUtils.loadTexture('img/background.jpg');
+        var backgroundMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2, 0),
+            new THREE.MeshBasicMaterial({
+                map: texture
+            }));
+
+        backgroundMesh.material.depthTest = false;
+        backgroundMesh.material.depthWrite = false;
+
+
+        // Create start background scene
+        var backgroundScene = new THREE.Scene();
+        var backgroundCamera = new THREE.Camera();
+        backgroundScene.add(backgroundCamera);
+        backgroundScene.add(backgroundMesh);
+
+        //variables to declare what text to remove
+        var title = $('#info')[0];
+        var keyTitle = $('#start')[0];
+
+        //set up the key flag
+        let keyFlag = false;
+
+        /*Intitiate the controls for the user
+         *Includes controls for all movements - speed, angle, firing etc
+         */
+
+        function controls() {
+            //level controls for the user initiated and controls loaded
+            document.addEventListener("keydown", (e) => {
+                if (e.code == 'Space') {
+                    //userScore = userScore + 0;
+
+                    if (switchState == 2) {
+                        firingBall.setLinearVelocity(new THREE.Vector3(speedOfBall, projectoryHeight, 0));
+                        userLevel1Scoring();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+
+                    }
+                    if (switchState == 4) {
+                        firingBall2.setLinearVelocity(new THREE.Vector3(speedOfBall, projectoryHeight, 0));
+                        userLevel2Scoring();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+                    }
+                    if (switchState == 6) {
+                        firingBall3.setLinearVelocity(new THREE.Vector3(speedOfBall, projectoryHeight, 0));
+                        level3Scoring();
+                        setTimeout(function() {
+                            document.getElementById('nextLevel').style.visibility = "visible";
+                        }, 15000);
+                    }
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.code == 'ArrowUp') {
+                    if (!keyFlag) {
+                        keyFlag = true;
+                        document.getElementById('angleInfo').innerHTML = projectoryHeight + 5;
+                        projectoryUpdateUP();
+                    }
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.code == 'ArrowDown') {
+                    if (!keyFlag) {
+                        keyFlag = true;
+                        document.getElementById('angleInfo').innerHTML = projectoryHeight - 5;
+                        projectoryUpdateDown();
+                    }
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.code == 'KeyA') {
+                    if (!keyFlag) {
+                        keyFlag = true;
+                        document.getElementById('speedInfo').innerHTML = speedOfBall - 5;
+                        speedOfBall = speedOfBall - 5;
+                    }
+                }
+            });
+            document.addEventListener("keydown", (e) => {
+                if (e.code == 'KeyD') {
+                    if (!keyFlag) {
+                        keyFlag = true;
+                        document.getElementById('speedInfo').innerHTML = speedOfBall + 5;
+                        speedOfBall = speedOfBall + 5;
+                    }
+                }
+            });
+
+            document.addEventListener("keyup", (e) => {
+                if (e.code == 'KeyA') {
+                    if (keyFlag) {
+                        keyFlag = false;
+                    }
+                }
+            });
+            document.addEventListener("keyup", (e) => {
+                if (e.code == 'KeyD') {
+                    keyFlag = false;
+                }
+            });
+
+            document.addEventListener("keyup", (e) => {
+                if (e.code == 'Space') {
+                    userScore == 0;
+                    keyFlag = false;
+                    //window.setTimeout(changeState, 10000);
+
+                }
+            });
+
+            document.addEventListener("keyup", (e) => {
+                if (e.code == 'ArrowUp') {
+                    if (keyFlag) {
+                        keyFlag = false;
+                    }
+                }
+            });
+
+            document.addEventListener("keyup", (e) => {
+                if (e.code == 'ArrowDown') {
+                    if (keyFlag) {
+                        keyFlag = false;
+                    }
+                }
+            });
+
+        }
+        /*Change the state in the first instance. This enables the game to get started*/
+        function changeState() {
+            if (switchState == 0) {
+                switchState += 1;
+            } else if (switchState == 1) {
+                state += 3;
+                switchState += 1;
+            }
+        }
+        /* Function ro remove everything in the scene, ready for the next level*/
+        function clearScene() {
+            //reset level
+            //remove old level
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+        }
+
+        /*Functions to add ball and floor for each individual level*/
+
+        function addFloorAndBall() {
+            scene.add(cube);
+            scene.add(firingBall);
+        }
+
+        function addBallAI() {
+            scene.add(cube);
+            scene.add(firingBallAI);
+        }
+
+        function addBall2() {
+            scene.add(cube);
+            scene.add(firingBall2);
+        }
+
+        function addBall2AI() {
+            scene.add(cube);
+            scene.add(firingBallAI2);
+        }
+
+        function addBall3() {
+            scene.add(cube);
+            scene.add(firingBall3);
+        }
+
+        function addBall3AI() {
+            scene.add(cube);
+            scene.add(firingBallAI3);
+        }
+
+        /* Rendering function */
+        var render = function() {
+            requestAnimationFrame(render);
+            scene.simulate();
+            // Update the title page shape rotations and delay text to move to level 1
+            sphere.rotation.y += 0.06;
+            sphere.rotation.x += 0.10;
+            sphere.rotation.z += 0.06;
+            setTimeout(function() {
+                document.getElementById('start').style.visibility = "visible";
+            }, 5000);
+
+
+            switch (state) {
+                case 0:
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'KeyW') {
+                            $(title).hide();
+                            $(keyTitle).hide();
+                            scene.remove(sphere);
+                            sphere.geometry.dispose();
+                            sphere.material.dispose();
+                            //add all the game functions here
+                            addFloorAndBall();
+                            addLevel1();
+                            changeState();
+                            setTimeout(function() {
+                                document.getElementById('speed').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('angle').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('speedInfo').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('angleInfo').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('userScore').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('AIScore').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('userScoreInfo').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('AIScoreInfo').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('howTo').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('firing').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('speedControls').style.visibility = "visible";
+                            }, 1);
+                            setTimeout(function() {
+                                document.getElementById('spacebarFire').style.visibility = "visible";
+                            }, 1);
+                        }
+                    });
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'KeyW') {
+                            keyFlag = false;
+                        }
+                    });
+
+                    break;
+                case 3:
+                    //intitate controls
+                    controls();
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            clearScene();
+                            addBallAI();
+                            addLevel1Game();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+
+                            if (switchState == 2) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+
+                        }
+                    });
+
+                    break;
+                case 5:
+                    //call AI but not instantly 
+                    window.setTimeout(gameAI, 4000);
+
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            clearScene();
+                            addBall2();
+                            addLevel2();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+
+                            if (switchState == 3) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+
+                        }
+                    });
+                    break;
+                case 7:
+                    //intitate controls
+                    controls();
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            clearScene();
+                            addBall2AI();
+                            addLevel2Game();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+                            if (switchState == 4) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+                        }
+                    });
+                    break;
+                case 9:
+                    //call AI but not instantly 
+                    window.setTimeout(gameAI, 4000);
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            clearScene();
+                            addBall3();
+                            addLevel3();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+                            if (switchState == 5) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+                        }
+                    });
+
+                    break;
+                case 11:
+                    //intitate controls
+                    controls();
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            clearScene();
+                            addBall3AI();
+                            addLevel3Game();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+                            if (switchState == 6) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+                        }
+                    });
+
+                    break;
+                case 13:
+                    window.setTimeout(gameAI, 4000);
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            //final scores
+                            clearScene();
+                            setTimeout(function() {
+                                document.getElementById('nextLevel').style.visibility = "hidden";
+                            }, 1);
+                            console.log("Game Finished")
+                            if (switchState == 7) {
+                                state += 2;
+                                switchState += 1;
+                            }
+                        }
+                    });
+
+                    document.addEventListener("keyup", (e) => {
+                        if (e.code == 'ArrowRight') {
+                            keyFlag = false;
+                        }
+                    });
+                    break;
+                case 15:
+                    //show end game scores
+                    setTimeout(function() {
+                        document.getElementById('nextLevel').style.visibility = "hidden";
+                        document.getElementById('speed').style.visibility = "hidden";
+                        document.getElementById('angle').style.visibility = "hidden";
+                        document.getElementById('speedInfo').style.visibility = "hidden";
+                        document.getElementById('angleInfo').style.visibility = "hidden";
+                        document.getElementById('userScore').style.visibility = "hidden";
+                        document.getElementById('AIScore').style.visibility = "hidden";
+                        document.getElementById('userScoreInfo').style.visibility = "hidden";
+                        document.getElementById('AIScoreInfo').style.visibility = "hidden";
+                        document.getElementById('howTo').style.visibility = "hidden";
+                        document.getElementById('firing').style.visibility = "hidden";
+                        document.getElementById('speedControls').style.visibility = "hidden";
+                        document.getElementById('spacebarFire').style.visibility = "hidden";
+                    }, 1);
+
+
+                    document.getElementById('winner').style.visibility = "visible";
+                    document.getElementById('winnerIs').style.visibility = "visible";
+
+                    if (userScore > AIScore) {
+                        document.getElementById('winnerIs').innerHTML = "You Win!";
+                    } else {
+                        document.getElementById('winnerIs').innerHTML = "You lose! Computer Wins";
+                    }
+
+                    break;
+            }
+
+            renderer.autoClear = false;
+            renderer.clear();
+            renderer.render(backgroundScene, backgroundCamera);
+            renderer.render(scene, camera);
+        };
+        render();
+
+    </script>
+</body>
+
+</html>

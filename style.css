@@ -1,0 +1,201 @@
+#info {
+	position: absolute;
+	top: 150px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 150px;
+    font-family: monospace;
+}
+
+#start {
+	position: absolute;
+	top: 650px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 75px;
+    font-family: monospace;
+}
+
+#howTo {
+	position: absolute;
+	top: 120px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 15px;
+    font-family: monospace;
+}
+#firing {
+	position: absolute;
+	top: 135px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 15px;
+    font-family: monospace;
+}
+#speedControls {
+	position: absolute;
+	top: 155px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 15px;
+    font-family: monospace;
+}
+#spacebarFire {
+	position: absolute;
+	top: 170px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 15px;
+    font-family: monospace;
+}
+#speed {
+	position: absolute;
+	top: 600px;
+    right: 680px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#angle {
+	position: absolute;
+	top: 600px;
+    right: 480px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#speedInfo {
+	position: absolute;
+	top: 600px;
+    right: 590px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#angleInfo {
+	position: absolute;
+	top: 600px;
+    right: 390px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#userScore {
+	position: absolute;
+	top: 50px;
+    right: 680px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#AIScore {
+	position: absolute;
+	top: 50px;
+    right: 430px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#userScoreInfo {
+	position: absolute;
+	top: 50px;
+    right: 550px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#AIScoreInfo {
+	position: absolute;
+	top: 50px;
+    right: 310px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 20px;
+    font-family: monospace;
+}
+#nextLevel {
+	position: absolute;
+	top: 500px;
+    right: 0px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 40px;
+    font-family: monospace;
+}
+
+#winner {
+	position: absolute;
+	top: 450px;
+    right: 200px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 40px;
+    font-family: monospace;
+}
+#winnerIs {
+	position: absolute;
+	top: 450px;
+    right: -130px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:center;
+    color: salmon;
+    font-size: 40px;
+    font-family: monospace;
+}
